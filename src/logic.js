@@ -18,7 +18,7 @@ function looksUnusable(text) {
   return bad.some((phrase) => lower.includes(phrase));
 }
 
-const FALLBACK = (v) => `A completely made-up study found that people who ${v} are statistically more likely to talk to their houseplants.`;
+const FALLBACK = (v) => `A completely made-up study found that people with the habit of ${v} are statistically more likely to talk to their houseplants.`;
 
 export async function generate(modelId, input) {
   const run = completion({
@@ -39,8 +39,16 @@ export async function generate(modelId, input) {
   text = text
     .trim()
     .replace(/^.*?\b(?:here'?s|here is)\b[^:\n]*:\s*\n*/i, "")
-    .trim()
-    .replace(/^["']|["']$/g, "")
+    .trim();
+  // The model sometimes prefixes the finding with a lab-report-style label
+  // ("Study Title:", "Results:", "Study Finding:") in varying combinations —
+  // strip up to two leading "Label:" lines rather than matching one exact phrase.
+  for (let i = 0; i < 2; i++) {
+    text = text.replace(/^[A-Z][A-Za-z ]{0,30}:\s*\n*/, "").trim();
+  }
+  text = text
+    .replace(/^["']/, "")
+    .replace(/["']$/, "")
     .trim();
 
   const result = looksUnusable(text) ? FALLBACK(input) : text;
